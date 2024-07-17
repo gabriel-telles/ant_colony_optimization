@@ -6,23 +6,32 @@ class AntColonyOptimization:
     
     Attributes:
         graph (dict): Adjacency list representation of the graph.
+        cost (dict): Dictionary to store costs associated with edges.
         source (int): The starting node for the ants.
         destination (int): The goal node for the ants.
         num_ants (int): The number of ants used in the algorithm.
         num_iterations (int): The number of iterations for the algorithm.
         pheromone_decay (float): The rate at which pheromones decay.
         alpha (float): The exponent for pheromone influence.
+        beta (float): The exponent for heuristic influence.
         pheromone (dict): Dictionary to store pheromone levels on edges.
     """
-    def __init__(self, graph, source, destination, num_ants=64, num_iterations=1000, pheromone_decay=0.01, alpha=2):
-        self.graph = graph # Adjacency list
+    def __init__(self, graph, cost, source, destination, num_ants=64, num_iterations=1000, pheromone_decay=0.01, alpha=2, beta=1):
+        self.graph = graph  # Adjacency list
+        self.cost = cost  # Cost dictionary
         self.source = source
         self.destination = destination
         self.num_ants = num_ants
         self.num_iterations = num_iterations
         self.pheromone_decay = pheromone_decay
         self.alpha = alpha
+        self.beta = beta
         self.pheromone = {}
+        
+        # Initialize pheromone levels for all edges in the graph
+        for node in graph:
+            for neighbor in graph[node]:
+                self.pheromone[(node, neighbor)] = 1
         
         # Initialize pheromone levels for all edges in the graph
         for node in graph:
@@ -67,7 +76,7 @@ class AntColonyOptimization:
 
     def _choose_next_node(self, current_node, visited):
         """
-        Chooses the next node for an ant to move to based on pheromone levels and visitation status.
+        Chooses the next node for an ant to move to based on pheromone levels, heuristic information, and visitation status.
         
         Args:
             current_node (int): The current node where the ant is located.
@@ -78,11 +87,15 @@ class AntColonyOptimization:
         """
         neighbors = self.graph[current_node]
         pheromones = np.array([self.pheromone[(current_node, neighbor)] for neighbor in neighbors])
-        pheromones = pheromones ** self.alpha
-        total_pheromones = np.sum(pheromones)
-        if total_pheromones == 0:
+        heuristics = np.array([1 / self.cost[(current_node, neighbor)] for neighbor in neighbors])
+        
+        combined_influence = (pheromones ** self.alpha) * (heuristics ** self.beta)
+        
+        total_influence = np.sum(combined_influence)
+        if total_influence == 0:
             return None
-        probabilities = pheromones / total_pheromones
+        probabilities = combined_influence / total_influence
+        
         next_node = np.random.choice(neighbors, p=probabilities)
         return next_node if next_node not in visited else None
 
@@ -100,8 +113,8 @@ class AntColonyOptimization:
         Args:
             path (list): The path taken by an ant, represented as a list of nodes.
         """
-        path_length = len(path) - 1
+        path_length = sum(self.cost[(path[i], path[i + 1])] for i in range(len(path) - 1))
         pheromone_deposit = 1 / path_length
-        for i in range(path_length):
+        for i in range(len(path) - 1):
             edge = (path[i], path[i + 1])
             self.pheromone[edge] += pheromone_deposit
