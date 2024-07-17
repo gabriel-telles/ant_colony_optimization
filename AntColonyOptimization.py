@@ -33,11 +33,6 @@ class AntColonyOptimization:
             for neighbor in graph[node]:
                 self.pheromone[(node, neighbor)] = 1
         
-        # Initialize pheromone levels for all edges in the graph
-        for node in graph:
-            for neighbor in graph[node]:
-                self.pheromone[(node, neighbor)] = 1
-        
     def run(self):
         """
         Executes the Ant Colony Optimization algorithm for a specified number of iterations and ants.
