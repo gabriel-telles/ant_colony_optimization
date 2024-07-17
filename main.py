@@ -1,4 +1,37 @@
+import matplotlib.pyplot as plt
+import numpy as np
 from AntColonyOptimization import AntColonyOptimization
+from collections import defaultdict
+
+def compute_rolling_average(data, window_size):
+    return np.convolve(data, np.ones(window_size) / window_size, mode='valid')
+
+def run_simulations(graph, cost, source, destination, num_iterations, parameter_name, parameter_values):
+    results = defaultdict(list)
+    for value in parameter_values:
+        if parameter_name == 'alpha':
+            aco = AntColonyOptimization(graph, cost, source, destination, num_iterations=num_iterations, alpha=value)
+        elif parameter_name == 'beta':
+            aco = AntColonyOptimization(graph, cost, source, destination, num_iterations=num_iterations, beta=value)
+        elif parameter_name == 'pheromone_decay':
+            aco = AntColonyOptimization(graph, cost, source, destination, num_iterations=num_iterations, pheromone_decay=value)
+        elif parameter_name == 'num_ants':
+            aco = AntColonyOptimization(graph, cost, source, destination, num_iterations=num_iterations, num_ants=value)
+        
+        path_lengths = aco.run()
+        results[value] = path_lengths
+    return results
+
+def plot_results(results, parameter_name):
+    plt.figure(figsize=(12, 6))
+    for value, path_lengths in results.items():
+        rolling_avg = compute_rolling_average(path_lengths, window_size=50)
+        plt.plot(rolling_avg, label=f'{parameter_name}={value}')
+    plt.xlabel('Iterations')
+    plt.ylabel('Rolling Average of Mean Path Length')
+    plt.title(f'Influence of {parameter_name} on Convergence')
+    plt.legend()
+    plt.show()
 
 graph = {
     0: [1, 9],
@@ -75,6 +108,20 @@ cost = {
     (18, 17): 4,
 }
 
-aco = AntColonyOptimization(graph, cost, source=0, destination=8)
-aco.run()
-print(aco.pheromone)
+num_iterations = 500
+
+alpha_values = [1, 2, 3]
+beta_values = [1, 2, 3]
+pheromone_decay_values = [0, 0.01, 0.1]
+num_ants_values = [32, 64, 128, 256]
+
+# Run simulations and plot results for alpha
+alpha_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='alpha', parameter_values=alpha_values)
+beta_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='beta', parameter_values=beta_values)
+pheromone_decay_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='pheromone_decay', parameter_values=pheromone_decay_values)
+num_ants_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='num_ants', parameter_values=num_ants_values)
+
+plot_results(alpha_results, 'alpha')
+plot_results(beta_results, 'beta')
+plot_results(pheromone_decay_results, 'pheromone_decay')
+plot_results(num_ants_results, 'num_ants')

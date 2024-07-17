@@ -34,18 +34,21 @@ class AntColonyOptimization:
                 self.pheromone[(node, neighbor)] = 1
         
     def run(self):
-        """
-        Executes the Ant Colony Optimization algorithm for a specified number of iterations and ants.
         
-        This function repeatedly generates paths using ants and updates the pheromone levels on the paths
-        taken by the ants. Pheromone levels decay after each iteration.
-        """
+        all_path_lengths = []
+        
         for _ in range(self.num_iterations):
+            path_lengths = []
             for _ in range(self.num_ants):
                 path = self._find_path()
                 if path:
+                    path_length = sum(self.cost[(path[i], path[i + 1])] for i in range(len(path) - 1))
+                    path_lengths.append(path_length)
                     self._deposit_pheromone(path)
+            all_path_lengths.append(np.mean(path_lengths) if path_lengths else float('inf'))
             self._decay_pheromone()
+        
+        return all_path_lengths
 
     def _find_path(self):
         """
