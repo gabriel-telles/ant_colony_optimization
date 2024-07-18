@@ -1,7 +1,7 @@
 import numpy as np
 
 class AntColonyOptimization:
-    def __init__(self, graph, cost, source, destination, num_ants=128, num_iterations=1000, pheromone_decay=0.01, alpha=2, beta=1):
+    def __init__(self, graph, cost, source, destination, num_ants=128, num_iterations=1000, pheromone_decay=0.01, alpha=1, beta=1):
         self.graph = graph  # Adjacency list
         self.cost = cost  # Cost dictionary
         self.source = source

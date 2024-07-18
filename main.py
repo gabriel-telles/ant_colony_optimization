@@ -9,6 +9,7 @@ def rolling_average(data, window_size):
 def run_simulations(graph, cost, source, destination, num_iterations, parameter_name, parameter_values):
     results = defaultdict(list)
     for value in parameter_values:
+        print(f"Running simulation for {parameter_name}={value}")
         if parameter_name == 'alpha':
             aco = AntColonyOptimization(graph, cost, source, destination, num_iterations=num_iterations, alpha=value)
         elif parameter_name == 'beta':
@@ -19,6 +20,7 @@ def run_simulations(graph, cost, source, destination, num_iterations, parameter_
             aco = AntColonyOptimization(graph, cost, source, destination, num_iterations=num_iterations, num_ants=value)
         
         path_lengths = aco.run()
+        print(f"Path lengths for {parameter_name}={value}: {path_lengths[:10]}...")  # Print first 10 path lengths for inspection
         results[value] = path_lengths
     return results
 
@@ -26,6 +28,7 @@ def plot_results(results, parameter_name, window_size=100):
     plt.figure(figsize=(12, 6))
     for value, path_lengths in results.items():
         if len(path_lengths) < window_size:
+            print(f"Skipping {parameter_name}={value} due to insufficient data (length {len(path_lengths)})")
             continue
         rolling_avg = rolling_average(path_lengths, window_size=window_size)
         x_axis = np.arange(len(rolling_avg)) + window_size
@@ -112,7 +115,7 @@ cost = {
     (18, 17): 1,
 }
 
-num_iterations = 1000
+num_iterations = 5000
 
 alpha_values = [1, 2]
 beta_values = [1, 2, 3]
@@ -126,5 +129,5 @@ pheromone_decay_results = run_simulations(graph, cost, source=0, destination=8, 
 
 #plot_results(alpha_results, 'alpha')
 #plot_results(beta_results, 'beta')
-plot_results(pheromone_decay_results, 'pheromone_decay')
+plot_results(pheromone_decay_results, 'pheromone_decay', window_size=100)
 #plot_results(num_ants_results, 'num_ants')
