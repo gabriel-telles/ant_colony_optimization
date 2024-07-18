@@ -11,7 +11,7 @@ class AntColonyOptimization:
         self.pheromone_decay = pheromone_decay
         self.alpha = alpha
         self.beta = beta
-        self.ants = [{'path': [self.source], 'visited': set([self.source]), 'returning': False, 'path_length': 0} for _ in range(self.num_ants)]
+        self.ants = [{'path': [self.source], 'returning': False, 'path_length': 0} for _ in range(self.num_ants)]
         
         self.pheromone = {}
         for node in graph:
@@ -32,6 +32,7 @@ class AntColonyOptimization:
                     
                 if ant['returning'] and ant['path'][-1] == self.source:
                     path_lengths.append(ant['path_length'])
+                    self._remove_cycles(ant['path'])
                     self._deposit_pheromone(ant['path'])
                     self._reset_ant(ant)
                     
@@ -45,10 +46,9 @@ class AntColonyOptimization:
         if current_node == self.destination:
             ant['returning'] = True
         else:
-            next_node = self._choose_next_node(current_node, ant['visited'], ant['path'][-2] if len(ant['path']) > 1 else None)
+            next_node = self._choose_next_node(current_node, ant['path'][-2] if len(ant['path']) > 1 else None)
             if next_node:
                 ant['path'].append(next_node)
-                ant['visited'].add(next_node)
                 if next_node == self.destination:
                     ant['returning'] = True
             else:
@@ -61,7 +61,7 @@ class AntColonyOptimization:
             ant['path'].pop()
             ant['path_length'] += self.cost[(previous_node, current_node)]
     
-    def _choose_next_node(self, current_node, visited, previous_node=None):
+    def _choose_next_node(self, current_node, previous_node=None):
         neighbors = self.graph[current_node]
         
         if previous_node and len(neighbors) > 1:
@@ -78,7 +78,7 @@ class AntColonyOptimization:
         probabilities = combined_influence / total_influence
         
         next_node = np.random.choice(neighbors, p=probabilities)
-        return next_node if next_node not in visited else None
+        return next_node
 
     def _decay_pheromone(self):
         for edge in self.pheromone:
@@ -99,6 +99,16 @@ class AntColonyOptimization:
 
     def _reset_ant(self, ant):
         ant['path'] = [self.source]
-        ant['visited'] = set([self.source])
         ant['returning'] = False
         ant['path_length'] = 0
+
+    def _remove_cycles(self, path):
+        node_set = set()
+        new_path = []
+        for node in path:
+            if node in node_set:
+                while new_path and new_path[-1] != node:
+                    node_set.remove(new_path.pop())
+            new_path.append(node)
+            node_set.add(node)
+        path[:] = new_path
