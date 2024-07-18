@@ -1,21 +1,6 @@
 import numpy as np
 
 class AntColonyOptimization:
-    """
-    Class for solving the shortest path problem using the Ant Colony Optimization algorithm.
-    
-    Attributes:
-        graph (dict): Adjacency list representation of the graph.
-        cost (dict): Dictionary to store costs associated with edges.
-        source (int): The starting node for the ants.
-        destination (int): The goal node for the ants.
-        num_ants (int): The number of ants used in the algorithm.
-        num_iterations (int): The number of iterations for the algorithm.
-        pheromone_decay (float): The rate at which pheromones decay.
-        alpha (float): The exponent for pheromone influence.
-        beta (float): The exponent for heuristic influence.
-        pheromone (dict): Dictionary to store pheromone levels on edges.
-    """
     def __init__(self, graph, cost, source, destination, num_ants=128, num_iterations=1000, pheromone_decay=0.01, alpha=2, beta=1):
         self.graph = graph  # Adjacency list
         self.cost = cost  # Cost dictionary
@@ -26,18 +11,14 @@ class AntColonyOptimization:
         self.pheromone_decay = pheromone_decay
         self.alpha = alpha
         self.beta = beta
-        self.pheromone = {}
+        self.ants = [{'path': [self.source], 'visited': set([self.source]), 'returning': False, 'path_length': 0} for _ in range(self.num_ants)]
         
-        # Initialize pheromone levels for all edges in the graph
+        self.pheromone = {}
         for node in graph:
             for neighbor in graph[node]:
                 self.pheromone[(node, neighbor)] = 1
-                
-        # Initialize ants
-        self.ants = [{'path': [self.source], 'visited': set([self.source]), 'returning': False, 'path_length': 0} for _ in range(self.num_ants)]
         
     def run(self):
-        
         all_path_lengths = []
         
         for _ in range(self.num_iterations):
@@ -54,8 +35,7 @@ class AntColonyOptimization:
                     self._deposit_pheromone(ant['path'])
                     self._reset_ant(ant)
                     
-            if path_lengths:
-                all_path_lengths.append(np.mean(path_lengths))
+            all_path_lengths.extend(path_lengths)
             self._decay_pheromone()
         
         return all_path_lengths
@@ -72,7 +52,6 @@ class AntColonyOptimization:
                 if next_node == self.destination:
                     ant['returning'] = True
             else:
-                # Reset the ant if no moves are possible and not at the destination
                 self._reset_ant(ant)
     
     def _move_ant_back(self, ant):
