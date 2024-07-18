@@ -108,20 +108,44 @@ cost = {
     (18, 17): 4,
 }
 
-num_iterations = 500
+# graph = {
+#     0: [1, 4],
+#     1: [0, 2],
+#     2: [1, 3, 5],
+#     3: [2],
+#     4: [0, 5],
+#     5: [2, 4],
+# }
 
-alpha_values = [1, 2, 3]
+# cost = {
+#     (0, 1): 1,
+#     (1, 0): 1,
+#     (0, 4): 2,
+#     (4, 0): 1,
+#     (1, 2): 1,
+#     (2, 1): 1,
+#     (2, 3): 1,
+#     (3, 2): 1,
+#     (4, 5): 1,
+#     (5, 4): 1,
+#     (2, 5): 1,
+#     (5, 2): 1,
+# }
+
+num_iterations = 2000
+
+alpha_values = [1, 2]
 beta_values = [1, 2, 3]
 pheromone_decay_values = [0, 0.01, 0.1]
 num_ants_values = [32, 64, 128, 256]
 
 # Run simulations and plot results for alpha
 alpha_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='alpha', parameter_values=alpha_values)
-beta_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='beta', parameter_values=beta_values)
-pheromone_decay_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='pheromone_decay', parameter_values=pheromone_decay_values)
-num_ants_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='num_ants', parameter_values=num_ants_values)
+#beta_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='beta', parameter_values=beta_values)
+#pheromone_decay_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='pheromone_decay', parameter_values=pheromone_decay_values)
+#num_ants_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='num_ants', parameter_values=num_ants_values)
 
 plot_results(alpha_results, 'alpha')
-plot_results(beta_results, 'beta')
-plot_results(pheromone_decay_results, 'pheromone_decay')
-plot_results(num_ants_results, 'num_ants')
+#plot_results(beta_results, 'beta')
+#plot_results(pheromone_decay_results, 'pheromone_decay')
+#plot_results(num_ants_results, 'num_ants')
