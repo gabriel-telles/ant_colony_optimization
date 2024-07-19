@@ -2,23 +2,39 @@ import numpy as np
 
 class AntColonyOptimization:
     """
-    Class for solving the shortest path problem using the Ant Colony Optimization algorithm.
-    
+    Ant Colony Optimization algorithm for finding the shortest path in a graph.
+
     Attributes:
-        graph (dict): Adjacency list representation of the graph.
-        cost (dict): Dictionary to store costs associated with edges.
-        source (int): The starting node for the ants.
-        destination (int): The goal node for the ants.
-        num_ants (int): The number of ants used in the algorithm.
-        num_iterations (int): The number of iterations for the algorithm.
-        pheromone_decay (float): The rate at which pheromones decay.
-        alpha (float): The exponent for pheromone influence.
-        beta (float): The exponent for heuristic influence.
-        pheromone (dict): Dictionary to store pheromone levels on edges.
+        graph (dict): Adjacency list representing the graph.
+        cost (dict): Dictionary representing the cost of edges.
+        source (any): The starting node.
+        destination (any): The destination node.
+        num_ants (int): Number of ants used in the simulation.
+        num_iterations (int): Number of iterations for the simulation.
+        pheromone_decay (float): Rate of pheromone decay.
+        alpha (float): Influence of pheromone.
+        beta (float): Influence of heuristic information.
+        ants (list): List of ants, each represented as a dictionary.
+        pheromone (dict): Dictionary representing the pheromone levels on edges.
     """
-    def __init__(self, graph, cost, source, destination, num_ants=64, num_iterations=1000, pheromone_decay=0.01, alpha=2, beta=1):
-        self.graph = graph  # Adjacency list
-        self.cost = cost  # Cost dictionary
+
+    def __init__(self, graph, cost, source, destination, num_ants=128, num_iterations=1000, pheromone_decay=0.01, alpha=1, beta=1):
+        """
+        Initializes the Ant Colony Optimization algorithm.
+
+        Args:
+            graph (dict): Adjacency list representing the graph.
+            cost (dict): Dictionary representing the cost of edges.
+            source (any): The starting node.
+            destination (any): The destination node.
+            num_ants (int, optional): Number of ants used in the simulation. Default is 128.
+            num_iterations (int, optional): Number of iterations for the simulation. Default is 1000.
+            pheromone_decay (float, optional): Rate of pheromone decay. Default is 0.01.
+            alpha (float, optional): Influence of pheromone. Default is 1.
+            beta (float, optional): Influence of heuristic information. Default is 1.
+        """
+        self.graph = graph
+        self.cost = cost
         self.source = source
         self.destination = destination
         self.num_ants = num_ants
@@ -26,93 +42,172 @@ class AntColonyOptimization:
         self.pheromone_decay = pheromone_decay
         self.alpha = alpha
         self.beta = beta
+        self.ants = [{'path': [self.source], 'returning': False, 'flag': False, 'path_length': 0} for _ in range(self.num_ants)]
+
         self.pheromone = {}
-        
-        # Initialize pheromone levels for all edges in the graph
         for node in graph:
             for neighbor in graph[node]:
                 self.pheromone[(node, neighbor)] = 1
-        
+
     def run(self):
-        
-        all_path_lengths = []
-        
-        for _ in range(self.num_iterations):
-            path_lengths = []
-            for _ in range(self.num_ants):
-                path = self._find_path()
-                if path:
-                    path_length = sum(self.cost[(path[i], path[i + 1])] for i in range(len(path) - 1))
-                    path_lengths.append(path_length)
-                    self._deposit_pheromone(path)
-            all_path_lengths.append(np.mean(path_lengths) if path_lengths else float('inf'))
+        """
+        Runs the Ant Colony Optimization algorithm.
+
+        Returns:
+            list: List of path lengths for each ant that completes a round trip.
+        """
+        path_lengths = []
+
+        for it in range(self.num_iterations):
+            print(it)
+            for ant in self.ants:
+                if not ant['returning']:
+                    self._move_ant_forward(ant)
+                elif not ant['flag']:
+                    ant['flag'] = True
+                    self._prepare_ant_for_return(ant)
+                    self._move_ant_back(ant)
+                else:
+                    self._move_ant_back(ant)
+
+                if ant['returning'] and ant['path'][-1] == self.source:
+                    path_lengths.append(ant['path_length'])
+                    self._reset_ant(ant)
+
             self._decay_pheromone()
-        
-        return all_path_lengths
 
-    def _find_path(self):
-        """
-        Finds a path from the source to the destination using an ant's traversal rules.
-        
-        Returns:
-            list: A list of nodes representing the path from source to destination, or None if no path is found.
-        """
-        current_node = self.source
-        path = [current_node]
-        visited = set()
-        visited.add(current_node)
-        
-        while current_node != self.destination:
-            next_node = self._choose_next_node(current_node, visited)
-            if next_node is None:
-                return None
-            path.append(next_node)
-            visited.add(next_node)
-            current_node = next_node
-        
-        return path
+        return path_lengths
 
-    def _choose_next_node(self, current_node, visited):
+    def _move_ant_forward(self, ant):
         """
-        Chooses the next node for an ant to move to based on pheromone levels, heuristic information, and visitation status.
-        
+        Moves the ant forward to the next node.
+
         Args:
-            current_node (int): The current node where the ant is located.
-            visited (set): A set of visited nodes.
-        
+            ant (dict): The ant to move.
+        """
+        current_node = ant['path'][-1]
+        next_node = self._choose_next_node(current_node, ant['path'][-2] if len(ant['path']) > 1 else None)
+        if next_node:
+            ant['path'].append(next_node)
+            if next_node == self.destination:
+                ant['returning'] = True
+        else:
+            ant['path'].append(ant['path'][-2])
+
+    def _move_ant_back(self, ant):
+        """
+        Moves the ant back to the source node, depositing pheromone along the path.
+
+        Args:
+            ant (dict): The ant to move.
+        """
+        if len(ant['path']) > 1:
+            current_node = ant['path'].pop()
+            previous_node = ant['path'][-1]
+            self._deposit_pheromone((previous_node, current_node), ant['path_length'])
+
+    def _prepare_ant_for_return(self, ant):
+        """
+        Prepares the ant for the return trip by removing cycles from its path and calculating the path length.
+
+        Args:
+            ant (dict): The ant to prepare.
+        """
+        ant['path'] = self._remove_cycles(ant['path'])
+        ant['path_length'] = self._calculate_path_length(ant['path'])
+
+    def _choose_next_node(self, current_node, previous_node=None):
+        """
+        Chooses the next node for the ant to move to based on pheromone levels and heuristic information.
+
+        Args:
+            current_node (any): The current node.
+            previous_node (any, optional): The previous node to avoid returning to. Default is None.
+
         Returns:
-            int: The next node to move to, or None if no valid move is possible.
+            any: The chosen next node.
         """
         neighbors = self.graph[current_node]
+
+        if previous_node and len(neighbors) > 1:
+            neighbors = [n for n in neighbors if n != previous_node]
+
         pheromones = np.array([self.pheromone[(current_node, neighbor)] for neighbor in neighbors])
         heuristics = np.array([1 / self.cost[(current_node, neighbor)] for neighbor in neighbors])
-        
+
         combined_influence = (pheromones ** self.alpha) * (heuristics ** self.beta)
-        
+
         total_influence = np.sum(combined_influence)
         if total_influence == 0:
-            return None
+            return previous_node if previous_node else None
         probabilities = combined_influence / total_influence
-        
+
         next_node = np.random.choice(neighbors, p=probabilities)
-        return next_node if next_node not in visited else None
+        return next_node
 
     def _decay_pheromone(self):
         """
-        Decays the pheromone levels on all edges by the specified decay rate.
+        Decays the pheromone levels on all edges.
         """
         for edge in self.pheromone:
             self.pheromone[edge] *= (1 - self.pheromone_decay)
 
-    def _deposit_pheromone(self, path):
+    def _deposit_pheromone(self, edge, path_length):
         """
-        Deposits pheromones on the edges of the given path.
-        
+        Deposits pheromone on an edge based on the path length.
+
         Args:
-            path (list): The path taken by an ant, represented as a list of nodes.
+            edge (tuple): The edge to deposit pheromone on.
+            path_length (float): The length of the path the ant traveled.
         """
-        path_length = sum(self.cost[(path[i], path[i + 1])] for i in range(len(path) - 1))
+        if path_length == 0:
+            return
+
         pheromone_deposit = 1 / path_length
-        for i in range(len(path) - 1):
-            edge = (path[i], path[i + 1])
-            self.pheromone[edge] += pheromone_deposit
+        self.pheromone[edge] += pheromone_deposit
+
+    def _calculate_path_length(self, path):
+        """
+        Calculates the length of a given path.
+
+        Args:
+            path (list): The path to calculate the length of.
+
+        Returns:
+            float: The length of the path.
+        """
+        return sum(self.cost[(path[i], path[i + 1])] for i in range(len(path) - 1))
+
+    def _reset_ant(self, ant):
+        """
+        Resets an ant to its initial state.
+
+        Args:
+            ant (dict): The ant to reset.
+        """
+        ant['path'] = [self.source]
+        ant['returning'] = False
+        ant['flag'] = False
+        ant['path_length'] = 0
+
+    def _remove_cycles(self, path):
+        """
+        Removes cycles from a given path.
+
+        Args:
+            path (list): The path to remove cycles from.
+
+        Returns:
+            list: The path with cycles removed.
+        """
+        i = 0
+        while i < len(path):
+            node = path[i]
+            if node in path[i + 1:]:
+                j = path.index(node, i + 1)
+                if j > i:
+                    del path[i + 1:j + 1]
+            else:
+                i += 1
+
+        return path

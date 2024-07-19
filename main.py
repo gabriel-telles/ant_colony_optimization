@@ -2,13 +2,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from AntColonyOptimization import AntColonyOptimization
 from collections import defaultdict
+import pickle
 
-def compute_rolling_average(data, window_size):
-    return np.convolve(data, np.ones(window_size) / window_size, mode='valid')
+def rolling_average(data, window_size):
+    return np.convolve(data, np.ones(window_size), 'valid') / window_size
 
 def run_simulations(graph, cost, source, destination, num_iterations, parameter_name, parameter_values):
     results = defaultdict(list)
     for value in parameter_values:
+        print(f"Running simulation for {parameter_name}={value}")
         if parameter_name == 'alpha':
             aco = AntColonyOptimization(graph, cost, source, destination, num_iterations=num_iterations, alpha=value)
         elif parameter_name == 'beta':
@@ -19,19 +21,35 @@ def run_simulations(graph, cost, source, destination, num_iterations, parameter_
             aco = AntColonyOptimization(graph, cost, source, destination, num_iterations=num_iterations, num_ants=value)
         
         path_lengths = aco.run()
+        print(f"Path lengths for {parameter_name}={value}: {path_lengths[:10]}...")  # Print first 10 path lengths for inspection
         results[value] = path_lengths
     return results
 
-def plot_results(results, parameter_name):
+def plot_results(results, parameter_name, window_size=100):
+    plt.rcParams.update({'font.size': 14})
     plt.figure(figsize=(12, 6))
     for value, path_lengths in results.items():
-        rolling_avg = compute_rolling_average(path_lengths, window_size=50)
-        plt.plot(rolling_avg, label=f'{parameter_name}={value}')
-    plt.xlabel('Iterations')
-    plt.ylabel('Rolling Average of Mean Path Length')
-    plt.title(f'Influence of {parameter_name} on Convergence')
-    plt.legend()
+        num_agents = value if (parameter_name == 'num_ants') else 1
+        if len(path_lengths) < window_size:
+            print(f"Skipping {parameter_name}={value} due to insufficient data (length {len(path_lengths)})")
+            continue
+        rolling_avg = rolling_average(path_lengths, window_size=window_size)
+        x_axis = (np.arange(len(rolling_avg)) + window_size) / num_agents
+        plt.plot(x_axis, rolling_avg, label=f'{parameter_name}={value}')
+    plt.xlabel('Normalized Number of Paths Found (Number of Paths / Number of Agents)', fontsize=16)
+    plt.ylabel('Rolling Average of Path Lengths', fontsize=16)
+    plt.xscale('log')
+    plt.title(f'Influence of {parameter_name} on Convergence', fontsize=18)
+    plt.legend(fontsize=14)
+    plt.grid(True)
+    plt.savefig(f'{parameter_name}_graph.eps', format='eps')
     plt.show()
+
+def save_results(results, parameter_name):
+    filename = f"{parameter_name}_results.pkl"
+    with open(filename, 'wb') as f:
+        pickle.dump(results, f)
+    print(f"Results for {parameter_name} saved to {filename}")
 
 graph = {
     0: [1, 9],
@@ -56,72 +74,78 @@ graph = {
 }
 
 cost = {
-    (0, 1): 2,
-    (0, 9): 4,
-    (1, 0): 2,
-    (1, 2): 3,
-    (2, 1): 3,
+    (0, 1): 1,
+    (0, 9): 1,
+    (1, 0): 1,
+    (1, 2): 1,
+    (2, 1): 1,
     (2, 3): 1,
     (3, 2): 1,
-    (3, 4): 2,
-    (4, 3): 2,
-    (4, 5): 2,
-    (5, 4): 2,
-    (5, 6): 3,
-    (6, 5): 3,
-    (6, 7): 2,
-    (7, 6): 2,
-    (7, 8): 4,
-    (8, 7): 4,
-    (8, 13): 6,
-    (9, 0): 4,
+    (3, 4): 1,
+    (4, 3): 1,
+    (4, 5): 1,
+    (5, 4): 1,
+    (5, 6): 1,
+    (6, 5): 1,
+    (6, 7): 1,
+    (7, 6): 1,
+    (7, 8): 1,
+    (8, 7): 1,
+    (8, 13): 1,
+    (9, 0): 1,
     (9, 10): 1,
-    (9, 14): 3,
+    (9, 14): 1,
     (10, 9): 1,
-    (10, 11): 2,
-    (10, 12): 4,
-    (10, 17): 3,
-    (11, 10): 2,
+    (10, 11): 1,
+    (10, 12): 1,
+    (10, 17): 1,
+    (11, 10): 1,
     (11, 12): 1,
-    (12, 10): 4,
+    (12, 10): 1,
     (12, 11): 1,
-    (12, 13): 3,
-    (12, 18): 5,
-    (13, 8): 6,
-    (13, 12): 3,
-    (13, 16): 4,
-    (14, 9): 3,
-    (14, 15): 2,
-    (14, 16): 3,
+    (12, 13): 1,
+    (12, 18): 1,
+    (13, 8): 1,
+    (13, 12): 1,
+    (13, 16): 1,
+    (14, 9): 1,
+    (14, 15): 1,
+    (14, 16): 1,
     (14, 17): 1,
-    (15, 14): 2,
+    (15, 14): 1,
     (15, 16): 1,
-    (16, 13): 4,
-    (16, 14): 3,
+    (16, 13): 1,
+    (16, 14): 1,
     (16, 15): 1,
-    (16, 18): 2,
-    (17, 10): 3,
+    (16, 18): 1,
+    (17, 10): 1,
     (17, 14): 1,
-    (17, 18): 4,
-    (18, 12): 5,
-    (18, 16): 2,
-    (18, 17): 4,
+    (17, 18): 1,
+    (18, 12): 1,
+    (18, 16): 1,
+    (18, 17): 1,
 }
 
-num_iterations = 500
+num_iterations = 10_000
 
-alpha_values = [1, 2, 3]
-beta_values = [1, 2, 3]
+alpha_values = [1, 2]
+beta_values = [0, 1, 2]
 pheromone_decay_values = [0, 0.01, 0.1]
-num_ants_values = [32, 64, 128, 256]
+num_ants_values = [64, 128, 256, 512]
 
-# Run simulations and plot results for alpha
 alpha_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='alpha', parameter_values=alpha_values)
+# save_results(alpha_results, 'alpha')
+
 beta_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='beta', parameter_values=beta_values)
+# save_results(beta_results, 'beta')
+
 pheromone_decay_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='pheromone_decay', parameter_values=pheromone_decay_values)
+# save_results(pheromone_decay_results, 'pheromone_decay')
+
 num_ants_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='num_ants', parameter_values=num_ants_values)
+# save_results(num_ants_results, 'num_ants_all')
 
 plot_results(alpha_results, 'alpha')
 plot_results(beta_results, 'beta')
-plot_results(pheromone_decay_results, 'pheromone_decay')
+plot_results(pheromone_decay_results, 'pheromone_decay', window_size=100)
 plot_results(num_ants_results, 'num_ants')
