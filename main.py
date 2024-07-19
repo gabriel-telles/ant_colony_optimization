@@ -26,20 +26,23 @@ def run_simulations(graph, cost, source, destination, num_iterations, parameter_
     return results
 
 def plot_results(results, parameter_name, window_size=100):
+    plt.rcParams.update({'font.size': 14})
     plt.figure(figsize=(12, 6))
     for value, path_lengths in results.items():
+        num_agents = value if (parameter_name == 'num_ants') else 1
         if len(path_lengths) < window_size:
             print(f"Skipping {parameter_name}={value} due to insufficient data (length {len(path_lengths)})")
             continue
         rolling_avg = rolling_average(path_lengths, window_size=window_size)
-        x_axis = np.arange(len(rolling_avg)) + window_size
+        x_axis = (np.arange(len(rolling_avg)) + window_size) / num_agents
         plt.plot(x_axis, rolling_avg, label=f'{parameter_name}={value}')
-    plt.xlabel('Number of Paths Found')
-    plt.ylabel('Rolling Average of Path Lengths')
+    plt.xlabel('Normalized Number of Paths Found (Number of Paths / Number of Agents)', fontsize=16)
+    plt.ylabel('Rolling Average of Path Lengths', fontsize=16)
     plt.xscale('log')
-    plt.title(f'Influence of {parameter_name} on Convergence')
-    plt.legend()
+    plt.title(f'Influence of {parameter_name} on Convergence', fontsize=18)
+    plt.legend(fontsize=14)
     plt.grid(True)
+    plt.savefig(f'{parameter_name}_graph.eps', format='eps')
     plt.show()
 
 def save_results(results, parameter_name):
@@ -123,7 +126,7 @@ cost = {
     (18, 17): 1,
 }
 
-num_iterations = 100_000
+num_iterations = 10_000
 
 alpha_values = [1, 2]
 beta_values = [0, 1, 2]
@@ -131,18 +134,18 @@ pheromone_decay_values = [0, 0.01, 0.1]
 num_ants_values = [64, 128, 256, 512]
 
 alpha_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='alpha', parameter_values=alpha_values)
-save_results(alpha_results, 'alpha')
+# save_results(alpha_results, 'alpha')
 
 beta_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='beta', parameter_values=beta_values)
-save_results(beta_results, 'beta')
+# save_results(beta_results, 'beta')
 
 pheromone_decay_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='pheromone_decay', parameter_values=pheromone_decay_values)
-save_results(pheromone_decay_results, 'pheromone_decay')
+# save_results(pheromone_decay_results, 'pheromone_decay')
 
 num_ants_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='num_ants', parameter_values=num_ants_values)
-save_results(num_ants_results, 'num_ants')
+# save_results(num_ants_results, 'num_ants_all')
 
-#plot_results(alpha_results, 'alpha')
-#plot_results(beta_results, 'beta')
-#plot_results(pheromone_decay_results, 'pheromone_decay', window_size=100)
-#plot_results(num_ants_results, 'num_ants')
+plot_results(alpha_results, 'alpha')
+plot_results(beta_results, 'beta')
+plot_results(pheromone_decay_results, 'pheromone_decay', window_size=100)
+plot_results(num_ants_results, 'num_ants')
