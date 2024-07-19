@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from AntColonyOptimization import AntColonyOptimization
 from collections import defaultdict
+import pickle
 
 def rolling_average(data, window_size):
     return np.convolve(data, np.ones(window_size), 'valid') / window_size
@@ -35,10 +36,17 @@ def plot_results(results, parameter_name, window_size=100):
         plt.plot(x_axis, rolling_avg, label=f'{parameter_name}={value}')
     plt.xlabel('Number of Paths Found')
     plt.ylabel('Rolling Average of Path Lengths')
+    plt.xscale('log')
     plt.title(f'Influence of {parameter_name} on Convergence')
     plt.legend()
     plt.grid(True)
     plt.show()
+
+def save_results(results, parameter_name):
+    filename = f"{parameter_name}_results.pkl"
+    with open(filename, 'wb') as f:
+        pickle.dump(results, f)
+    print(f"Results for {parameter_name} saved to {filename}")
 
 graph = {
     0: [1, 9],
@@ -115,19 +123,26 @@ cost = {
     (18, 17): 1,
 }
 
-num_iterations = 5000
+num_iterations = 100_000
 
 alpha_values = [1, 2]
-beta_values = [1, 2, 3]
+beta_values = [0, 1, 2]
 pheromone_decay_values = [0, 0.01, 0.1]
-num_ants_values = [32, 64, 128, 256]
+num_ants_values = [64, 128, 256, 512]
 
-# alpha_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='alpha', parameter_values=alpha_values)
-#beta_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='beta', parameter_values=beta_values)
+alpha_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='alpha', parameter_values=alpha_values)
+save_results(alpha_results, 'alpha')
+
+beta_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='beta', parameter_values=beta_values)
+save_results(beta_results, 'beta')
+
 pheromone_decay_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='pheromone_decay', parameter_values=pheromone_decay_values)
-#num_ants_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='num_ants', parameter_values=num_ants_values)
+save_results(pheromone_decay_results, 'pheromone_decay')
+
+num_ants_results = run_simulations(graph, cost, source=0, destination=8, num_iterations=num_iterations, parameter_name='num_ants', parameter_values=num_ants_values)
+save_results(num_ants_results, 'num_ants')
 
 #plot_results(alpha_results, 'alpha')
 #plot_results(beta_results, 'beta')
-plot_results(pheromone_decay_results, 'pheromone_decay', window_size=100)
+#plot_results(pheromone_decay_results, 'pheromone_decay', window_size=100)
 #plot_results(num_ants_results, 'num_ants')
